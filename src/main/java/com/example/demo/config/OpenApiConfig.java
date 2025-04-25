@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import io.swagger.v3.oas.annotations.ExternalDocumentation;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Contact;
@@ -20,7 +21,7 @@ import org.springframework.context.annotation.Configuration;
     info = @Info(
         title = "API de gestion de sécurité",
         version = "1.0",
-        description = "API REST pour la gestion des utilisateurs, rôles et permissions",
+        description = "API REST pour la gestion des utilisateurs, rôles et permissions avec monitoring via Actuator",
         contact = @Contact(
             name = "Équipe de développement",
             email = "contact@example.com"
@@ -35,7 +36,11 @@ import org.springframework.context.annotation.Configuration;
     },
     security = {
         @SecurityRequirement(name = "bearerAuth")
-    }
+    },
+    externalDocs = @ExternalDocumentation(
+        description = "Endpoints Actuator pour monitoring",
+        url = "/actuator"
+    )
 )
 @SecuritySchemes({
     @SecurityScheme(

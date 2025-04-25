@@ -71,16 +71,23 @@ public class SecurityConfig {
             // Configure les règles d'autorisation pour les requêtes HTTP
             .authorizeHttpRequests(auth -> auth
                 // Endpoints publics accessibles sans authentification
-                .requestMatchers(    "/api/auth/**",
+                .requestMatchers(
+                    "/api/auth/**",
                     "/h2-console/**",
                     "/error",
-                    "/api/test/**", // Ajout des endpoints de test
-                    // URLs Swagger
+                    "/api/test/**", // Endpoints de test
+                    // URLs Swagger et OpenAPI
                     "/swagger-ui.html",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
+                    "/v3/api-docs.yaml",
                     "/swagger-resources/**",
                     "/webjars/**").permitAll()
+                // Endpoints Actuator avec autorisations spécifiques
+                .requestMatchers("/actuator").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/prometheus").hasRole("ADMIN")
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
                 // Tous les autres endpoints nécessitent une authentification
                 .anyRequest().authenticated()
             )
