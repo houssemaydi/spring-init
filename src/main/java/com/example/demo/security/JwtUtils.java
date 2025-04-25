@@ -41,7 +41,9 @@ public class JwtUtils {
      */
     @PostConstruct
     public void init() {
-        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        //this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+
     }
 
     /**
