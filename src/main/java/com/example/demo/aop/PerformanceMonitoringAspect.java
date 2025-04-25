@@ -12,7 +12,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Aspect pour mesurer les performances des méthodes importantes
@@ -89,10 +88,10 @@ public class PerformanceMonitoringAspect {
                     .register(meterRegistry)
             );
 
-            if (log.isDebugEnabled()) {
-                log.debug("Performance de {}.{}: {} ms", className, methodName,
-                    TimeUnit.NANOSECONDS.toMillis(timeElapsed));
-            }
+         if (log.isDebugEnabled()) {
+             log.debug("Performance de {}.{}: {} ms", className, methodName,
+                 timeElapsed / 1_000_000); // Convert nanoseconds to milliseconds manually
+         }
 
             return result;
         } catch (Exception e) {
