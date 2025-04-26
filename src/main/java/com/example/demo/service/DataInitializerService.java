@@ -10,6 +10,7 @@ import com.example.demo.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Slf4j
 @Profile({"dev", "default"}) // N'exécute pas en production
+@ConditionalOnProperty(name = "spring.flyway.enabled", havingValue = "false")
 public class DataInitializerService {
 
     private final RoleRepository roleRepository;

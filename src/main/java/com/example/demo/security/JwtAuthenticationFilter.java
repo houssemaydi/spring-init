@@ -25,7 +25,7 @@ import java.util.Map;
  * Traite les tentatives de connexion et génère un token JWT en cas de succès
  */
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+public class  JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;

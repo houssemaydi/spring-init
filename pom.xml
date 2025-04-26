@@ -107,6 +107,11 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Spring Boot Configuration Processor pour la génération de métadonnées -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
         <!-- Tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
