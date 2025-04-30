@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.PasswordChangeRequest;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,12 +9,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contrôleur pour la gestion des utilisateurs
@@ -27,6 +33,7 @@ import java.util.List;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Récupère tous les utilisateurs
@@ -112,5 +119,45 @@ public class UserController {
         return userRepository.findByUsername(username)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Change le mot de passe de l'utilisateur authentifié
+     * Accessible à l'utilisateur connecté
+     * @param passwordChangeRequest La requête contenant les anciens et nouveaux mots de passe
+     * @return Confirmation du changement ou erreur si les mots de passe sont invalides
+     */
+    @PostMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Changer de mot de passe", description = "Permet à l'utilisateur de changer son mot de passe")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Mot de passe changé avec succès"),
+        @ApiResponse(responseCode = "400", description = "Données invalides ou mot de passe actuel incorrect"),
+        @ApiResponse(responseCode = "403", description = "Accès refusé")
+    })
+    public ResponseEntity<?> changePassword(@Valid @RequestBody PasswordChangeRequest passwordChangeRequest) {
+        // Récupération de l'utilisateur authentifié
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        return userRepository.findByUsername(username)
+            .map(user -> {
+                // Vérification que le mot de passe actuel est correct
+                if (!passwordEncoder.matches(passwordChangeRequest.getCurrentPassword(), user.getPassword())) {
+                    return ResponseEntity.badRequest().body(Map.of("message", "Le mot de passe actuel est incorrect"));
+                }
+
+                // Vérification que le nouveau mot de passe et sa confirmation correspondent
+                if (!passwordChangeRequest.getNewPassword().equals(passwordChangeRequest.getConfirmPassword())) {
+                    return ResponseEntity.badRequest().body(Map.of("message", "Les nouveaux mots de passe ne correspondent pas"));
+                }
+
+                // Encodage et mise à jour du mot de passe
+                user.setPassword(passwordEncoder.encode(passwordChangeRequest.getNewPassword()));
+                userRepository.save(user);
+
+                return ResponseEntity.ok(Map.of("message", "Mot de passe modifié avec succès"));
+            })
+            .orElse(ResponseEntity.badRequest().build());
     }
 }

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     ports:
@@ -15,7 +15,7 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
       - SPRING_H2_CONSOLE_ENABLED=false
       - SPRING_H2_CONSOLE_SETTINGS_WEB_ALLOW_OTHERS=false
-      - APP_JWTSECRET=YourSecretKeyHereMustBeAtLeast32CharactersLong
+      - APP_JWTSECRET=YourSecretKeyHereMustBeAtLeast32CharactersLongYourSecretKeyHereMustBeAtLeast32CharactersLong
       - APP_JWTEXPIRATIONMS=86400000
       - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8
     volumes:
