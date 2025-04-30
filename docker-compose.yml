@@ -8,14 +8,16 @@ services:
     ports:
       - "8080:8080"
     environment:
+      - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb
       - SPRING_DATASOURCE_USERNAME=sa
       - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
-      - SPRING_H2_CONSOLE_ENABLED=true
-      - SPRING_H2_CONSOLE_SETTINGS_WEB_ALLOW_OTHERS=true
+      - SPRING_H2_CONSOLE_ENABLED=false
+      - SPRING_H2_CONSOLE_SETTINGS_WEB_ALLOW_OTHERS=false
       - APP_JWTSECRET=YourSecretKeyHereMustBeAtLeast32CharactersLong
       - APP_JWTEXPIRATIONMS=86400000
+      - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8
     volumes:
       - ./logs:/app/logs
     healthcheck:

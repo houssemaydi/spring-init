@@ -4,9 +4,17 @@ WORKDIR /app
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
+
+# Fix permissions on mvnw
+RUN chmod +x ./mvnw
+
+# Download dependencies first (better caching)
+RUN ./mvnw dependency:go-offline -B
+
 COPY src src
 
-RUN ./mvnw package -DskipTests
+# Set file.encoding explicitly for the build
+RUN ./mvnw package -DskipTests -Dfile.encoding=UTF-8
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
