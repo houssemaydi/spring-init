@@ -19,9 +19,6 @@ RUN ./mvnw package -DskipTests -Dfile.encoding=UTF-8
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Create volume for logs
-VOLUME /app/logs
-
 # Copy the built jar file
 COPY --from=build /app/target/*.jar app.jar
 

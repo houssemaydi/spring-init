@@ -1,0 +1,8 @@
+{
+  "volumes": [
+    {
+      "name": "logs-volume",
+      "mount_path": "/app/logs"
+    }
+  ]
+}
