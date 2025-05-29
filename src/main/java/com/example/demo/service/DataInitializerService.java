@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Service pour initialiser les données par défaut dans la base de données
@@ -74,9 +75,9 @@ public class DataInitializerService {
             Set.of(readUser));
 
         // Création d'utilisateurs de test
-        createUser("admin", "admin@example.com", "admin123", Set.of(adminRole));
-        createUser("manager", "manager@example.com", "manager123", Set.of(managerRole));
-        createUser("user", "user@example.com", "user123", Set.of(userRole));
+        createUser("admin", "admin", "admin@example.com", "admin123", Set.of(adminRole));
+        createUser("manager", "manager", "manager@example.com", "manager123", Set.of(managerRole));
+        createUser("user", "user", "user@example.com", "user123", Set.of(userRole));
 
         log.info("Initialisation des données terminée avec succès");
     }
@@ -111,15 +112,18 @@ public class DataInitializerService {
 
     /**
      * Crée un utilisateur
-     * @param username Nom d'utilisateur
+     * @param firstName Nom d'utilisateur
+     * @param lastName Nom d'utilisateur
      * @param email Adresse email
      * @param password Mot de passe en clair (sera encodé)
      * @param roles Ensemble des rôles de l'utilisateur
      * @return L'utilisateur créé
      */
-    private User createUser(String username, String email, String password, Set<Role> roles) {
+    private User createUser(String firstName, String lastName, String email, String password, Set<Role> roles) {
         User user = new User();
-        user.setUsername(username);
+        user.setUsername(UUID.randomUUID().toString());
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
         user.setRoles(roles);

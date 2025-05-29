@@ -1,6 +1,9 @@
 package com.example.demo.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +20,7 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Inheritance(strategy = InheritanceType.JOINED)
 public class User {
 
     /**
@@ -26,21 +30,37 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Le prénom ne peut pas être vide")
+    @Size(min = 2, max = 50, message = "Le prénom doit contenir entre 2 et 50 caractères")
+    @Column(nullable = false)
+    private String firstName;
+
+    @NotBlank(message = "Le nom ne peut pas être vide")
+    @Size(min = 2, max = 50, message = "Le nom doit contenir entre 2 et 50 caractères")
+    @Column(nullable = false)
+    private String lastName;
+
+
     /**
      * Nom d'utilisateur unique
      */
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = true)
     private String username;
 
     /**
      * Adresse email unique
      */
+    @NotBlank(message = "L'email ne peut pas être vide")
+    @Email(message = "L'email doit être valide")
+    @Size(max = 100, message = "L'email ne peut pas dépasser 100 caractères")
     @Column(unique = true, nullable = false)
     private String email;
 
     /**
      * Mot de passe de l'utilisateur (sera stocké crypté)
      */
+    @NotBlank(message = "Le mot de passe ne peut pas être vide")
+    @Size(min = 6, max = 100, message = "Le mot de passe doit contenir entre 6 et 100 caractères")
     @Column(nullable = false)
     private String password;
 
@@ -79,4 +99,11 @@ public class User {
      */
     @Column(nullable = false)
     private boolean accountNonExpired = true;
+
+    @OneToMany(mappedBy = "approuveePar")
+    private Set<Seance> seancesApprouvees = new HashSet<>();
+
+    @ManyToOne
+    @JoinColumn(name = "driving_school_id")
+    private DrivingSchool drivingSchool;
 }
