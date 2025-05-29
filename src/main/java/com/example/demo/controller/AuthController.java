@@ -221,4 +221,113 @@ public class AuthController {
 
         return ResponseEntity.ok(Map.of("message", "Enregistrement du propriétaire d'auto-école complété avec succès"));
     }
+
+    @PostMapping("/signup/candidate")
+    @Operation(summary = "Inscription d'un candidat", description = "Crée un nouveau compte candidat avec toutes les informations nécessaires")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Candidat créé avec succès"),
+        @ApiResponse(responseCode = "400", description = "Données invalides ou email déjà utilisé"),
+        @ApiResponse(responseCode = "404", description = "Auto-école non trouvée")
+    })
+    public ResponseEntity<?> signupCandidate(@Valid @RequestBody CandidateSignupRequest request) {
+        // Vérification de l'existence de l'email
+        if (userRepository.existsByEmail(request.getEmail())) {
+            return ResponseEntity
+                .badRequest()
+                .body(Map.of("message", "Cette adresse email est déjà utilisée"));
+        }
+
+        // Récupérer l'auto-école
+        DrivingSchool drivingSchool = drivingSchoolRepository.findById(request.getDrivingSchoolId())
+            .orElseThrow(() -> new RuntimeException("Auto-école non trouvée"));
+
+        // Créer le candidat
+        Candidate candidate = new Candidate();
+        candidate.setUsername(UUID.randomUUID().toString());
+        candidate.setFirstName(request.getFirstName());
+        candidate.setLastName(request.getLastName());
+        candidate.setEmail(request.getEmail());
+        candidate.setPassword(passwordEncoder.encode(request.getPassword()));
+        candidate.setPhoneNumber(request.getPhoneNumber());
+        candidate.setCinNumber(request.getCinNumber());
+        candidate.setHasSpecialPrice(false);
+        candidate.setHeuresCode(0);
+        candidate.setHeuresConduite(0);
+        candidate.setSolde(0.0);
+        candidate.setHasGlAccess(false);
+        candidate.setPrixCodeHeure(drivingSchool.getPrixCodeHeure());
+        candidate.setPrixConduiteHeure(drivingSchool.getPrixConduiteHeure());
+        candidate.setDrivingSchool(drivingSchool);
+        candidate.setEnabled(true);
+        candidate.setAccountNonExpired(true);
+        candidate.setAccountNonLocked(true);
+        candidate.setCredentialsNonExpired(true);
+
+        // Attribution du rôle CANDIDAT
+        Role candidateRole = roleRepository.findByName("CANDIDAT")
+            .orElseThrow(() -> new RuntimeException("Rôle CANDIDAT non trouvé"));
+        Set<Role> roles = new HashSet<>();
+        roles.add(candidateRole);
+        candidate.setRoles(roles);
+
+        userRepository.save(candidate);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(Map.of(
+                "message", "Candidat enregistré avec succès",
+                "userId", candidate.getId()
+            ));
+    }
+
+    @PostMapping("/signup/driving-school")
+    @Operation(summary = "Inscription d'une auto-école", description = "Crée un nouveau compte pour une auto-école avec toutes les informations nécessaires")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Auto-école créée avec succès"),
+        @ApiResponse(responseCode = "400", description = "Données invalides ou email déjà utilisé")
+    })
+    public ResponseEntity<?> signupDrivingSchool(@Valid @RequestBody DrivingSchoolSignupRequest request) {
+        // Vérification de l'existence de l'email
+        if (userRepository.existsByEmail(request.getEmail())) {
+            return ResponseEntity
+                .badRequest()
+                .body(Map.of("message", "Cette adresse email est déjà utilisée"));
+        }
+
+        // Création de l'auto-école
+        DrivingSchool drivingSchool = new DrivingSchool();
+        drivingSchool.setNom(request.getSchoolName());
+        drivingSchool.setAdresse(request.getSchoolAddress());
+        drivingSchool.setPrixCodeHeure(request.getCodeHourPrice());
+        drivingSchool.setPrixConduiteHeure(request.getDrivingHourPrice());
+        drivingSchool = drivingSchoolRepository.save(drivingSchool);
+
+        // Création de l'utilisateur gestionnaire
+        User user = new User();
+        user.setUsername(UUID.randomUUID().toString());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setDrivingSchool(drivingSchool);
+        user.setEnabled(true);
+        user.setAccountNonExpired(true);
+        user.setAccountNonLocked(true);
+        user.setCredentialsNonExpired(true);
+
+        // Attribution du rôle GESTIONNAIRE_AUTO_ECOLE
+        Role ownerRole = roleRepository.findByName("GESTIONNAIRE_AUTO_ECOLE")
+            .orElseThrow(() -> new RuntimeException("Rôle GESTIONNAIRE_AUTO_ECOLE non trouvé"));
+        Set<Role> roles = new HashSet<>();
+        roles.add(ownerRole);
+        user.setRoles(roles);
+
+        userRepository.save(user);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(Map.of(
+                "message", "Auto-école enregistrée avec succès",
+                "userId", user.getId(),
+                "drivingSchoolId", drivingSchool.getId()
+            ));
+    }
 }

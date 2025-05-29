@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -106,4 +107,24 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "driving_school_id")
     private DrivingSchool drivingSchool;
+
+    /**
+     * Status d'approbation de l'utilisateur
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
+
+    /**
+     * Utilisateur qui a approuvé ce compte
+     */
+    @ManyToOne
+    @JoinColumn(name = "approved_by")
+    private User approvedBy;
+
+    /**
+     * Date d'approbation du compte
+     */
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
 }

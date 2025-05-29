@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-
+import com.example.demo.model.ApprovalStatus;
 import com.example.demo.model.Permission;
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,7 +30,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @Profile({"dev", "default"}) // N'exécute pas en production
-@ConditionalOnProperty(name = "spring.flyway.enabled", havingValue = "false")
 public class DataInitializerService {
 
     private final RoleRepository roleRepository;
@@ -62,22 +62,45 @@ public class DataInitializerService {
         Permission readPermission = createPermission("PERMISSION_READ", "Lire les permissions");
         Permission writePermission = createPermission("PERMISSION_WRITE", "Modifier des permissions");
         Permission deletePermission = createPermission("PERMISSION_DELETE", "Supprimer des permissions");
+        Permission approveUser = createPermission("USER_APPROVE", "Approuver des utilisateurs");
+        Permission manageDrivingSchool = createPermission("MANAGE_DRIVING_SCHOOL", "Gérer une auto-école");
 
-        // Création des rôles standard avec leurs permissions
-        Role adminRole = createRole("ADMIN", "Administrateur du système",
+        // Création des rôles avec leurs permissions
+        Role superAdminRole = createRole("SUPERADMIN", "Administrateur de la plateforme avec accès à toutes les auto-écoles",
             Set.of(readUser, writeUser, deleteUser, readRole, writeRole, deleteRole,
-                readPermission, writePermission, deletePermission));
+                readPermission, writePermission, deletePermission, approveUser, manageDrivingSchool));
 
-        Role managerRole = createRole("MANAGER", "Gestionnaire de l'application",
+        Role adminRole = createRole("ADMIN", "Propriétaire d'une auto-école",
+            Set.of(readUser, writeUser, readRole, readPermission, approveUser, manageDrivingSchool));
+
+        Role gestionnaireRole = createRole("GESTIONNAIRE_AUTO_ECOLE", "Responsable d'un établissement",
             Set.of(readUser, writeUser, readRole, readPermission));
 
-        Role userRole = createRole("USER", "Utilisateur standard",
+        Role secretaireRole = createRole("SECRETAIRE", "Personnel administratif",
+            Set.of(readUser, readRole));
+
+        Role moniteurRole = createRole("MONITEUR", "Formateur de conduite",
+            Set.of(readUser, readRole));
+
+        Role candidatRole = createRole("CANDIDAT", "Élève inscrit à l'auto-école",
             Set.of(readUser));
 
+        Role supportRole = createRole("SUPPORT", "Support technique",
+            Set.of(readUser, readRole));
+
         // Création d'utilisateurs de test
-        createUser("admin", "admin", "admin@example.com", "admin123", Set.of(adminRole));
-        createUser("manager", "manager", "manager@example.com", "manager123", Set.of(managerRole));
-        createUser("user", "user", "user@example.com", "user123", Set.of(userRole));
+        // 1. Superadmin (approuvé automatiquement, pas d'approbateur)
+        User superAdmin = createUser("superadmin", "admin", "superadmin@example.com", "admin123", Set.of(superAdminRole), null, ApprovalStatus.APPROVED);
+
+        // 2. Admin d'une auto-école (approuvé par le superadmin)
+        User admin = createUser("admin", "admin", "admin@example.com", "admin123", Set.of(adminRole), superAdmin, ApprovalStatus.APPROVED);
+
+        // 3. Utilisateurs de l'auto-école (en attente d'approbation par l'admin)
+        createUser("gestionnaire", "manager", "gestionnaire@example.com", "manager123", Set.of(gestionnaireRole), admin, ApprovalStatus.PENDING);
+        createUser("secretaire", "user", "secretaire@example.com", "user123", Set.of(secretaireRole), admin, ApprovalStatus.PENDING);
+        createUser("moniteur", "user", "moniteur@example.com", "user123", Set.of(moniteurRole), admin, ApprovalStatus.PENDING);
+        createUser("candidat", "user", "candidat@example.com", "user123", Set.of(candidatRole), admin, ApprovalStatus.PENDING);
+        createUser("support", "user", "support@example.com", "user123", Set.of(supportRole), admin, ApprovalStatus.PENDING);
 
         log.info("Initialisation des données terminée avec succès");
     }
@@ -117,9 +140,11 @@ public class DataInitializerService {
      * @param email Adresse email
      * @param password Mot de passe en clair (sera encodé)
      * @param roles Ensemble des rôles de l'utilisateur
+     * @param approvedBy Utilisateur qui approuve ce compte
+     * @param approvalStatus Status d'approbation initial
      * @return L'utilisateur créé
      */
-    private User createUser(String firstName, String lastName, String email, String password, Set<Role> roles) {
+    private User createUser(String firstName, String lastName, String email, String password, Set<Role> roles, User approvedBy, ApprovalStatus approvalStatus) {
         User user = new User();
         user.setUsername(UUID.randomUUID().toString());
         user.setFirstName(firstName);
@@ -131,6 +156,11 @@ public class DataInitializerService {
         user.setAccountNonExpired(true);
         user.setAccountNonLocked(true);
         user.setCredentialsNonExpired(true);
+        user.setApprovalStatus(approvalStatus);
+        user.setApprovedBy(approvedBy);
+        if (approvalStatus == ApprovalStatus.APPROVED) {
+            user.setApprovedAt(LocalDateTime.now());
+        }
         return userRepository.save(user);
     }
 }
