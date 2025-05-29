@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
-
 /**
  * DTO pour les demandes d'enregistrement d'un nouvel utilisateur
  */
@@ -18,11 +16,18 @@ import java.util.Set;
 public class RegisterRequest {
 
     /**
-     * Nom d'utilisateur souhaité
+     * Prénom de l'utilisateur
      */
-    @NotBlank(message = "Le nom d'utilisateur ne peut pas être vide")
-    @Size(min = 3, max = 50, message = "Le nom d'utilisateur doit contenir entre 3 et 50 caractères")
-    private String username;
+    @NotBlank(message = "Le prénom ne peut pas être vide")
+    @Size(min = 2, max = 50, message = "Le prénom doit contenir entre 2 et 50 caractères")
+    private String firstName;
+
+    /**
+     * Nom de l'utilisateur
+     */
+    @NotBlank(message = "Le nom ne peut pas être vide")
+    @Size(min = 2, max = 50, message = "Le nom doit contenir entre 2 et 50 caractères")
+    private String lastName;
 
     /**
      * Adresse email
@@ -38,10 +43,4 @@ public class RegisterRequest {
     @NotBlank(message = "Le mot de passe ne peut pas être vide")
     @Size(min = 6, max = 100, message = "Le mot de passe doit contenir entre 6 et 100 caractères")
     private String password;
-
-    /**
-     * Rôles demandés (optionnel)
-     * Si non fourni, un rôle par défaut sera attribué
-     */
-    private Set<String> roles;
 }

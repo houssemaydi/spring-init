@@ -29,6 +29,9 @@ public class Candidate extends User {
     @NotNull(message = "L'accès GL doit être spécifié")
     private boolean hasGlAccess;
 
+    @NotNull(message = "utilisateur a un prix special")
+    private boolean hasSpecialPrice;
+
     @NotNull(message = "Le prix de l'heure de code doit être spécifié")
     @Min(value = 0, message = "Le prix de l'heure de code ne peut pas être négatif")
     private double prixCodeHeure;
@@ -50,4 +53,4 @@ public class Candidate extends User {
 
     @OneToMany(mappedBy = "candidate")
     private Set<Payment> payments;
-} 
+}

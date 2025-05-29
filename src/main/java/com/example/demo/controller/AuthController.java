@@ -1,11 +1,8 @@
 package com.example.demo.controller;
 
-
-import com.example.demo.dto.LoginRequest;
-import com.example.demo.dto.RegisterRequest;
-import com.example.demo.dto.AuthenticationResponse;
-import com.example.demo.model.Role;
-import com.example.demo.model.User;
+import com.example.demo.dto.*;
+import com.example.demo.model.*;
+import com.example.demo.repository.DrivingSchoolRepository;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtUtils;
@@ -29,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Contrôleur pour gérer l'authentification et l'enregistrement des utilisateurs
@@ -42,6 +40,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final DrivingSchoolRepository drivingSchoolRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
 
@@ -89,19 +88,12 @@ public class AuthController {
      * @return La réponse indiquant le succès de l'opération
      */
     @PostMapping("/register")
-    @Operation(summary = "Enregistrer un nouvel utilisateur", description = "Crée un nouveau compte utilisateur")
+    @Operation(summary = "Enregistrer un nouvel utilisateur", description = "Crée un nouveau compte utilisateur avec les informations de base")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Utilisateur créé avec succès"),
-        @ApiResponse(responseCode = "400", description = "Données invalides ou nom d'utilisateur/email déjà utilisé")
+        @ApiResponse(responseCode = "400", description = "Données invalides ou email déjà utilisé")
     })
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
-        // Vérification de l'existence du nom d'utilisateur
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            return ResponseEntity
-                .badRequest()
-                .body(Map.of("message", "Ce nom d'utilisateur est déjà pris"));
-        }
-
         // Vérification de l'existence de l'email
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
             return ResponseEntity
@@ -111,31 +103,122 @@ public class AuthController {
 
         // Création du nouvel utilisateur
         User user = new User();
-        user.setUsername(registerRequest.getUsername());
+        user.setUsername(UUID.randomUUID().toString());
+        user.setFirstName(registerRequest.getFirstName());
+        user.setLastName(registerRequest.getLastName());
         user.setEmail(registerRequest.getEmail());
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setEnabled(true);
+        user.setAccountNonExpired(true);
+        user.setAccountNonLocked(true);
+        user.setCredentialsNonExpired(true);
 
-        // Attribution des rôles
-        Set<Role> roles = new HashSet<>();
-
-        if (registerRequest.getRoles() == null || registerRequest.getRoles().isEmpty()) {
-            // Attribution du rôle USER par défaut
-            Role userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RuntimeException("Rôle USER non trouvé"));
-            roles.add(userRole);
-        } else {
-            // Attribution des rôles demandés
-            registerRequest.getRoles().forEach(roleName -> {
-                Role role = roleRepository.findByName(roleName)
-                    .orElseThrow(() -> new RuntimeException("Rôle " + roleName + " non trouvé"));
-                roles.add(role);
-            });
-        }
-
-        user.setRoles(roles);
         userRepository.save(user);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(Map.of("message", "Utilisateur enregistré avec succès"));
+            .body(Map.of(
+                "message", "Utilisateur enregistré avec succès",
+                "userId", user.getId()
+            ));
+    }
+
+    @PostMapping("/complete-candidate-registration/{userId}")
+    @Operation(summary = "Compléter l'enregistrement d'un candidat", description = "Complète l'enregistrement d'un utilisateur en tant que candidat")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Enregistrement complété avec succès"),
+        @ApiResponse(responseCode = "400", description = "Données invalides"),
+        @ApiResponse(responseCode = "404", description = "Utilisateur non trouvé")
+    })
+    public ResponseEntity<?> completeCandidateRegistration(
+            @PathVariable Long userId,
+            @Valid @RequestBody CandidateRegistrationRequest request) {
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        // Vérifier si l'utilisateur est déjà un candidat
+        if (user instanceof Candidate) {
+            return ResponseEntity
+                .badRequest()
+                .body(Map.of("message", "L'utilisateur est déjà un candidat"));
+        }
+
+        // Récupérer l'auto-école
+        DrivingSchool drivingSchool = drivingSchoolRepository.findById(request.getDrivingSchoolId())
+            .orElseThrow(() -> new RuntimeException("Auto-école non trouvée"));
+
+        // Créer un nouveau candidat
+        Candidate candidate = new Candidate();
+        candidate.setId(user.getId());
+        candidate.setUsername(user.getUsername());
+        candidate.setFirstName(user.getFirstName());
+        candidate.setLastName(user.getLastName());
+        candidate.setEmail(user.getEmail());
+        candidate.setPassword(user.getPassword());
+        candidate.setPhoneNumber(request.getPhoneNumber());
+        candidate.setCinNumber(request.getCinNumber());
+        candidate.setHasSpecialPrice(false);
+        candidate.setHeuresCode(0);
+        candidate.setHeuresConduite(0);
+        candidate.setSolde(0.0);
+        candidate.setHasGlAccess(false);
+        candidate.setPrixCodeHeure(drivingSchool.getPrixCodeHeure());
+        candidate.setPrixConduiteHeure(drivingSchool.getPrixConduiteHeure());
+        candidate.setDrivingSchool(drivingSchool);
+
+        // Attribution du rôle CANDIDAT
+        Role candidateRole = roleRepository.findByName("CANDIDAT")
+            .orElseThrow(() -> new RuntimeException("Rôle CANDIDAT non trouvé"));
+        Set<Role> roles = new HashSet<>();
+        roles.add(candidateRole);
+        candidate.setRoles(roles);
+
+        userRepository.save(candidate);
+
+        return ResponseEntity.ok(Map.of("message", "Enregistrement du candidat complété avec succès"));
+    }
+
+    @PostMapping("/complete-school-driver-registration/{userId}")
+    @Operation(summary = "Compléter l'enregistrement d'un propriétaire d'auto-école", description = "Complète l'enregistrement d'un utilisateur en tant que propriétaire d'auto-école")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Enregistrement complété avec succès"),
+        @ApiResponse(responseCode = "400", description = "Données invalides"),
+        @ApiResponse(responseCode = "404", description = "Utilisateur non trouvé")
+    })
+    public ResponseEntity<?> completeSchoolDriverRegistration(
+            @PathVariable Long userId,
+            @Valid @RequestBody SchoolDriverRegistrationRequest request) {
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        // Vérifier si l'utilisateur est déjà associé à une auto-école
+        if (user.getDrivingSchool() != null) {
+            return ResponseEntity
+                .badRequest()
+                .body(Map.of("message", "L'utilisateur est déjà associé à une auto-école"));
+        }
+
+        // Création de l'auto-école
+        DrivingSchool drivingSchool = new DrivingSchool();
+        drivingSchool.setNom(request.getSchoolName());
+        drivingSchool.setAdresse(request.getSchoolAddress());
+        drivingSchool.setPrixCodeHeure(request.getCodeHourPrice());
+        drivingSchool.setPrixConduiteHeure(request.getDrivingHourPrice());
+        drivingSchool = drivingSchoolRepository.save(drivingSchool);
+
+        // Association de l'utilisateur à l'auto-école
+        user.setDrivingSchool(drivingSchool);
+
+        // Attribution du rôle GESTIONNAIRE_AUTO_ECOLE
+        Role ownerRole = roleRepository.findByName("GESTIONNAIRE_AUTO_ECOLE")
+            .orElseThrow(() -> new RuntimeException("Rôle GESTIONNAIRE_AUTO_ECOLE non trouvé"));
+        Set<Role> roles = new HashSet<>();
+        roles.add(ownerRole);
+        user.setRoles(roles);
+
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Enregistrement du propriétaire d'auto-école complété avec succès"));
     }
 }
