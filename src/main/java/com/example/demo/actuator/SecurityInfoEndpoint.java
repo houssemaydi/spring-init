@@ -35,7 +35,7 @@ public class SecurityInfoEndpoint {
         details.put("timestamp", Instant.now().toString());
         details.put("totalUsers", userRepository.count());
         details.put("activeUsers", userRepository.findAll().stream()
-            .filter(user -> user.isEnabled() && user.isAccountNonLocked())
+            .filter(user -> Boolean.TRUE.equals(user.getEnabled()) && Boolean.TRUE.equals(user.getAccountNonLocked()))
             .count());
 
         details.put("systemInfo", getSystemInfo());
@@ -58,10 +58,10 @@ public class SecurityInfoEndpoint {
                 details.put("found", true);
                 details.put("username", user.getUsername());
                 details.put("email", user.getEmail());
-                details.put("enabled", user.isEnabled());
-                details.put("accountNonLocked", user.isAccountNonLocked());
-                details.put("accountNonExpired", user.isAccountNonExpired());
-                details.put("credentialsNonExpired", user.isCredentialsNonExpired());
+                details.put("enabled", user.getEnabled());
+                details.put("accountNonLocked", user.getAccountNonLocked());
+                details.put("accountNonExpired", user.getAccountNonExpired());
+                details.put("credentialsNonExpired", user.getCredentialsNonExpired());
                 details.put("roles", user.getRoles().stream()
                     .map(role -> role.getName())
                     .toList());

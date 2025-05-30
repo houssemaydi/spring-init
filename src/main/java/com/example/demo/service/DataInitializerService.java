@@ -1,10 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.model.ApprovalStatus;
-import com.example.demo.model.Permission;
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
-import com.example.demo.repository.PermissionRepository;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
@@ -17,8 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,12 +29,11 @@ import java.util.UUID;
 public class DataInitializerService {
 
     private final RoleRepository roleRepository;
-    private final PermissionRepository permissionRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Initialise les données par défaut (rôles, permissions, utilisateurs)
+     * Initialise les données par défaut (rôles, utilisateurs)
      * Exécuté après l'initialisation du bean Spring
      */
     @PostConstruct
@@ -52,41 +47,14 @@ public class DataInitializerService {
             return;
         }
 
-        // Création des permissions standard
-        Permission readUser = createPermission("USER_READ", "Lire les détails utilisateurs");
-        Permission writeUser = createPermission("USER_WRITE", "Modifier des utilisateurs");
-        Permission deleteUser = createPermission("USER_DELETE", "Supprimer des utilisateurs");
-        Permission readRole = createPermission("ROLE_READ", "Lire les rôles");
-        Permission writeRole = createPermission("ROLE_WRITE", "Modifier des rôles");
-        Permission deleteRole = createPermission("ROLE_DELETE", "Supprimer des rôles");
-        Permission readPermission = createPermission("PERMISSION_READ", "Lire les permissions");
-        Permission writePermission = createPermission("PERMISSION_WRITE", "Modifier des permissions");
-        Permission deletePermission = createPermission("PERMISSION_DELETE", "Supprimer des permissions");
-        Permission approveUser = createPermission("USER_APPROVE", "Approuver des utilisateurs");
-        Permission manageDrivingSchool = createPermission("MANAGE_DRIVING_SCHOOL", "Gérer une auto-école");
-
-        // Création des rôles avec leurs permissions
-        Role superAdminRole = createRole("SUPERADMIN", "Administrateur de la plateforme avec accès à toutes les auto-écoles",
-            Set.of(readUser, writeUser, deleteUser, readRole, writeRole, deleteRole,
-                readPermission, writePermission, deletePermission, approveUser, manageDrivingSchool));
-
-        Role adminRole = createRole("ADMIN", "Propriétaire d'une auto-école",
-            Set.of(readUser, writeUser, readRole, readPermission, approveUser, manageDrivingSchool));
-
-        Role gestionnaireRole = createRole("GESTIONNAIRE_AUTO_ECOLE", "Responsable d'un établissement",
-            Set.of(readUser, writeUser, readRole, readPermission));
-
-        Role secretaireRole = createRole("SECRETAIRE", "Personnel administratif",
-            Set.of(readUser, readRole));
-
-        Role moniteurRole = createRole("MONITEUR", "Formateur de conduite",
-            Set.of(readUser, readRole));
-
-        Role candidatRole = createRole("CANDIDAT", "Élève inscrit à l'auto-école",
-            Set.of(readUser));
-
-        Role supportRole = createRole("SUPPORT", "Support technique",
-            Set.of(readUser, readRole));
+        // Création des rôles
+        Role superAdminRole = createRole("SUPERADMIN", "Administrateur de la plateforme avec accès à toutes les auto-écoles");
+        Role adminRole = createRole("ADMIN", "Propriétaire d'une auto-école");
+        Role gestionnaireRole = createRole("GESTIONNAIRE_AUTO_ECOLE", "Responsable d'un établissement");
+        Role secretaireRole = createRole("SECRETAIRE", "Personnel administratif");
+        Role moniteurRole = createRole("MONITEUR", "Formateur de conduite");
+        Role candidatRole = createRole("CANDIDAT", "Élève inscrit à l'auto-école");
+        Role supportRole = createRole("SUPPORT", "Support technique");
 
         // Création d'utilisateurs de test
         // 1. Superadmin (approuvé automatiquement, pas d'approbateur)
@@ -106,30 +74,15 @@ public class DataInitializerService {
     }
 
     /**
-     * Crée une permission
-     * @param name Nom de la permission
-     * @param description Description de la permission
-     * @return La permission créée
-     */
-    private Permission createPermission(String name, String description) {
-        Permission permission = new Permission();
-        permission.setName(name);
-        permission.setDescription(description);
-        return permissionRepository.save(permission);
-    }
-
-    /**
-     * Crée un rôle avec ses permissions
+     * Crée un rôle
      * @param name Nom du rôle
      * @param description Description du rôle
-     * @param permissions Ensemble des permissions du rôle
      * @return Le rôle créé
      */
-    private Role createRole(String name, String description, Set<Permission> permissions) {
+    private Role createRole(String name, String description) {
         Role role = new Role();
         role.setName(name);
         role.setDescription(description);
-        role.setPermissions(permissions);
         return roleRepository.save(role);
     }
 

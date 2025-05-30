@@ -80,26 +80,26 @@ public class User {
     /**
      * Indique si le compte utilisateur est activé
      */
-    @Column(nullable = false)
-    private boolean enabled = true;
+    @Column(nullable = true)
+    private Boolean enabled;
 
     /**
      * Indique si le compte n'est pas verrouillé
      */
-    @Column(nullable = false)
-    private boolean accountNonLocked = true;
+    @Column(nullable = true)
+    private Boolean accountNonLocked;
 
     /**
      * Indique si les identifiants ne sont pas expirés
      */
-    @Column(nullable = false)
-    private boolean credentialsNonExpired = true;
+    @Column(nullable = true)
+    private Boolean credentialsNonExpired;
 
     /**
      * Indique si le compte n'est pas expiré
      */
-    @Column(nullable = false)
-    private boolean accountNonExpired = true;
+    @Column(nullable = true)
+    private Boolean accountNonExpired;
 
     @OneToMany(mappedBy = "approuveePar")
     private Set<Seance> seancesApprouvees = new HashSet<>();
@@ -112,8 +112,8 @@ public class User {
      * Status d'approbation de l'utilisateur
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
+    @Column(nullable = true)
+    private ApprovalStatus approvalStatus;
 
     /**
      * Utilisateur qui a approuvé ce compte
@@ -127,4 +127,16 @@ public class User {
      */
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
+
+    /**
+     * Initialise les valeurs par défaut pour les champs de sécurité
+     */
+    @PrePersist
+    public void prePersist() {
+        if (enabled == null) enabled = true;
+        if (accountNonLocked == null) accountNonLocked = true;
+        if (credentialsNonExpired == null) credentialsNonExpired = true;
+        if (accountNonExpired == null) accountNonExpired = true;
+        if (approvalStatus == null) approvalStatus = ApprovalStatus.PENDING;
+    }
 }
